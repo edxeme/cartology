@@ -24,6 +24,11 @@ def test_relative_imports_are_resolved_to_absolute_names(modules):
     assert "sample_app.models" in imports
 
 
+def test_from_import_of_submodule_is_recorded(modules):
+    # `from sample_app import orders` must surface sample_app.orders, not just the package.
+    assert "sample_app.orders" in modules["sample_app.pricing"].imports
+
+
 def test_external_imports_are_kept_as_written(modules):
     assert "dataclasses" in modules["sample_app.models"].imports
 

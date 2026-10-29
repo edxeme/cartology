@@ -64,9 +64,7 @@ def scan_package(root: Path) -> dict[str, ModuleInfo]:
             if isinstance(node, ast.Import):
                 info.imports.update(alias.name for alias in node.names)
             elif isinstance(node, ast.ImportFrom):
-                target = _resolve_from_import(name, is_package, node)
-                if target:
-                    info.imports.add(target)
+                info.imports.update(_resolve_from_import(name, is_package, node))
             elif isinstance(node, _FUNCTION_NODES):
                 info.functions.append(
                     FunctionInfo(node.name, node.lineno, _cyclomatic_complexity(node))
@@ -82,19 +80,29 @@ def _module_name(package: str, relative: Path) -> str:
     return ".".join([package, *parts])
 
 
-def _resolve_from_import(module: str, is_package: bool, node: ast.ImportFrom) -> str | None:
-    """Turn ``from ..x import y`` inside ``module`` into an absolute dotted name."""
-    if node.level == 0:
-        return node.module
+def _resolve_from_import(module: str, is_package: bool, node: ast.ImportFrom) -> set[str]:
+    """Turn ``from ..x import y`` inside ``module`` into absolute dotted names.
 
-    package_parts = module.split(".") if is_package else module.split(".")[:-1]
-    ascend = node.level - 1
-    if ascend > len(package_parts):
-        return None
-    base = package_parts[: len(package_parts) - ascend]
-    if node.module:
-        base = [*base, *node.module.split(".")]
-    return ".".join(base) or None
+    Besides the imported-from module, every ``module.name`` combination is
+    recorded so ``from sample_app import orders`` can be matched against the
+    ``sample_app.orders`` module when the graph is built. Names that turn out
+    to be plain objects are dropped there.
+    """
+    if node.level == 0:
+        base = node.module.split(".") if node.module else []
+    else:
+        package_parts = module.split(".") if is_package else module.split(".")[:-1]
+        ascend = node.level - 1
+        if ascend > len(package_parts):
+            return set()
+        base = package_parts[: len(package_parts) - ascend]
+        if node.module:
+            base = [*base, *node.module.split(".")]
+    if not base:
+        return set()
+    candidates = {".".join(base)}
+    candidates.update(".".join([*base, alias.name]) for alias in node.names)
+    return candidates
 
 
 def _cyclomatic_complexity(function: ast.AST) -> int:

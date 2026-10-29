@@ -24,6 +24,10 @@ def test_relative_imports_produce_edges(graph):
     assert ImportEdge("sample_app.reports.summary", "sample_app.models") in graph.edges
 
 
+def test_fixture_contains_the_orders_pricing_cycle(graph):
+    assert ["sample_app.orders", "sample_app.pricing"] in graph.cycles()
+
+
 def test_acyclic_graph_has_no_cycles():
     graph = ImportGraph(
         edges={ImportEdge("a", "b"), ImportEdge("b", "c"), ImportEdge("a", "c")}
@@ -47,3 +51,8 @@ def test_disjoint_cycles_are_reported_separately():
 
 def test_fan_in_counts_importers(graph):
     assert graph.fan_in("sample_app.models") >= 2
+
+
+def test_fan_out_counts_dependencies(graph):
+    # orders.py imports sample_app, sample_app.models and sample_app.pricing.
+    assert graph.fan_out("sample_app.orders") == 3
