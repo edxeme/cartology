@@ -19,9 +19,12 @@ from cartology.report import (
     render_deadcode,
     render_hotspots,
     render_map,
+    render_trace,
     to_json,
+    trace_payload,
 )
 from cartology.scanner import scan_package
+from cartology.trace import run_traced
 
 EXIT_OK = 0
 EXIT_USAGE = 1
@@ -60,6 +63,11 @@ def main(argv: list[str] | None = None) -> int:
         print(emit(deadcode_payload(unused), render_deadcode(unused)))
         return EXIT_FINDINGS if unused else EXIT_OK
 
+    if args.command == "trace":
+        result = run_traced(modules, args.module, Path(args.path))
+        print(emit(trace_payload(result), render_trace(result)))
+        return EXIT_OK
+
     parser.error(f"unknown command: {args.command}")  # pragma: no cover
 
 
@@ -80,6 +88,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
     add_target("map", "modules with their functions and internal imports")
     add_target("cycles", "circular imports between modules")
+    trace = sub.add_parser("trace", help="run a module and report executed functions")
+    trace.add_argument("path", help="path to the package directory to scan")
+    trace.add_argument("-m", "--module", required=True, help="module to run (e.g. pkg.demo)")
+    trace.add_argument("--format", choices=("text", "json", "md"), default="text")
     hotspots = sub.add_parser("hotspots", help="most complex functions first")
     hotspots.add_argument("path", help="path to the package directory to scan")
     hotspots.add_argument("--format", choices=("text", "json", "md"), default="text")

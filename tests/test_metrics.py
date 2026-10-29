@@ -33,7 +33,7 @@ def test_limit_is_respected(modules):
 
 def test_summary_totals(modules):
     totals = summary(modules)
-    assert totals["modules"] == 7
-    assert totals["functions"] >= 6
+    assert totals["modules"] == 8
+    assert totals["functions"] >= 7
     assert totals["lines"] > 0
     assert 0 < totals["avg_complexity"] < 10

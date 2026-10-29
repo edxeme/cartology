@@ -88,6 +88,29 @@ def render_deadcode(unused: list) -> str:
     return f"# Possibly dead functions\n\n{body}\n\nName-based heuristic — verify each hit before deleting."
 
 
+def trace_payload(result) -> dict:
+    return {
+        "executed": [asdict(hit) for hit in result.executed],
+        "cold": [asdict(hit) for hit in result.cold],
+    }
+
+
+def render_trace(result) -> str:
+    lines = [
+        f"# Runtime trace ({len(result.executed)} functions executed, {len(result.cold)} cold)",
+        "",
+        "## Executed",
+        "",
+    ]
+    lines.extend(f"- {hit.module} · {hit.function}()" for hit in result.executed)
+    lines.extend(["", "## Cold (defined but never executed)", ""])
+    if result.cold:
+        lines.extend(f"- {hit.module} · {hit.function}()" for hit in result.cold)
+    else:
+        lines.append("None.")
+    return "\n".join(lines)
+
+
 def _markdown_table(header: tuple, rows: list[tuple]) -> str:
     out = ["| " + " | ".join(header) + " |", "|" + "---|" * len(header)]
     out.extend("| " + " | ".join(row) + " |" for row in rows)

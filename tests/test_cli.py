@@ -24,6 +24,7 @@ def test_map_json_reports_every_module():
     assert set(payload) == {
         "sample_app",
         "sample_app.config",
+        "sample_app.demo",
         "sample_app.models",
         "sample_app.orders",
         "sample_app.pricing",
