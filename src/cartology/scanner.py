@@ -38,6 +38,7 @@ class ModuleInfo:
     path: Path
     imports: set[str] = field(default_factory=set)
     functions: list[FunctionInfo] = field(default_factory=list)
+    references: set[str] = field(default_factory=set)
 
 
 def scan_package(root: Path) -> dict[str, ModuleInfo]:
@@ -65,6 +66,10 @@ def scan_package(root: Path) -> dict[str, ModuleInfo]:
                 info.imports.update(alias.name for alias in node.names)
             elif isinstance(node, ast.ImportFrom):
                 info.imports.update(_resolve_from_import(name, is_package, node))
+            elif isinstance(node, ast.Name):
+                info.references.add(node.id)
+            elif isinstance(node, ast.Attribute):
+                info.references.add(node.attr)
             elif isinstance(node, _FUNCTION_NODES):
                 info.functions.append(
                     FunctionInfo(node.name, node.lineno, _cyclomatic_complexity(node))
